@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRONET FIBRA - Consultor Virtual</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff; /* Fundo branco */
+            color: #212529; /* Cor de texto escura para contraste no fundo claro */
+            margin: 0; /* Remove margem padrão do body */
+            overflow-x: hidden; /* Evita barra de rolagem horizontal */
+            display: flex; /* Torna o body um container flex */
+            flex-direction: column; /* Organiza os itens em coluna */
+            align-items: center; /* Centraliza horizontalmente os itens dentro do body */
+            min-height: 100vh; /* Garante que o body ocupe toda a altura da viewport */
+            position: relative; /* Para que o canvas seja posicionado em relação ao body */
+        }
+        .main-container { /* Este é o div id="app" */
+            width: 100%; /* Permite que o container principal ocupe a largura total */
+            max-width: 1024px; /* Define uma largura máxima para o conteúdo principal */
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Centraliza os elementos internos (header, main, footer) */
+            flex-grow: 1; /* Permite que cresça e ocupe o espaço disponível */
+            z-index: 1; /* Garante que o conteúdo esteja acima do canvas */
+            padding: 1rem; /* Adiciona o padding geral aqui para o conteúdo */
+            box-sizing: border-box; /* Garante que padding não adicione largura extra */
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8); /* Fundo branco translúcido para efeito de vidro */
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.05); /* Borda muito sutil */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Sombra suave para destacar */
+            transition: all 0.3s ease;
+            padding: 1.5rem; /* Ajuste do padding */
+            border-radius: 1rem; /* Ajuste do border-radius */
+            width: 100%; /* Ocupa 100% da largura do seu pai (section) */
+            max-width: 768px; /* Largura máxima para o card */
+            margin-bottom: 1.5rem; /* Margem inferior */
+            margin-left: auto; /* Centraliza o card */
+            margin-right: auto; /* Centraliza o card */
+        }
+        .glass-card-hover:hover {
+            background: rgba(240, 240, 240, 0.9); /* Ligeiramente mais opaco no hover */
+            border: 1px solid rgba(0, 0, 0, 0.1); /* Borda mais visível no hover */
+            transform: translateY(-5px);
+        }
+        .plan-card-recommended {
+            background: #a7f3d0; /* Continua sendo o verde/ciano da logo */
+            color: #212529 !important; /* Texto escuro para contraste */
+            border: 2px solid #6ee7b7; /* Borda verde/ciano */
+            box-shadow: 0 0 25px rgba(100, 255, 218, 0.6); /* Sombra verde/ciano */
+        }
+        /* Ajustar cores de texto dentro do card recomendado para escuro */
+        .plan-card-recommended h3,
+        .plan-card-recommended p {
+            color: #212529 !important;
+        }
+        .plan-card-recommended .bg-white { /* Ajustar 'RECOMENDADO' badge colors */
+            background-color: #212529 !important; /* Fundo escuro */
+            color: #a7f3d0 !important; /* Texto verde/ciano */
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, #3b82f6, #60a5fa); /* Gradiente azul da logo */
+            color: white; /* Texto branco no botão azul */
+            transition: all 0.3s ease;
+            padding: 0.75rem 2rem; /* Ajuste do padding */
+            border-radius: 9999px; /* Botão arredondado */
+            font-weight: bold;
+            display: inline-block;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .btn-primary:hover {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.7); /* Sombra azul */
+            transform: scale(1.05);
+        }
+        .fade-in {
+            animation: fadeIn 0.8s ease-in-out forwards;
+        }
+        .slide-in-up {
+            animation: slideInUp 0.6s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Estilo para a logo */
+        .logo {
+            max-width: 200px; /* Tamanho ajustado da logo */
+            height: auto;
+            margin-bottom: 1rem;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        /* Ajustes para texto específico que antes era branco e agora precisa ser escuro */
+        .text-gray-300, .text-gray-400, .text-gray-500 {
+            color: #495057; /* Um cinza médio para textos secundários */
+        }
+        /* Ajustar o texto da descrição do plano dentro do card de plano comum */
+        .glass-card .text-gray-300 {
+            color: #495057; /* Cor escura para o texto dentro do glass-card */
+        }
+        /* Ajustar o texto do preço nos planos comuns para um tom de azul da logo */
+        .glass-card .text-teal-300 {
+            color: #3b82f6; /* Um azul mais escuro da logo (mantido, mas pode ser ajustado para um cinza escuro também se preferir) */
+        }
+
+        /* Cor para a frase "Conectando você ao futuro." - Azul do botão */
+        .text-blue-btn { /* Nova classe para aplicar a cor */
+            color: #3b82f6; /* Usando a cor de início do gradiente do botão */
+        }
+
+        /* Canvas para o fundo interativo */
+        #fiberCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Fica atrás de todo o conteúdo */
+            background-color: #0b132b; /* Um fundo azul escuro para as "fibras" */
+        }
+    </style>
+</head>
+<body>
+    <canvas id="fiberCanvas"></canvas>
+    <div id="app" class="main-container">
+
+        <header class="w-full max-w-4xl text-center mb-8 fade-in mx-auto">
+            <img src="./logo.png" alt="PRONET FIBRA Logo" class="logo mx-auto">
+            <p class="text-blue-btn text-lg">Conectando você ao futuro.</p>
+        </header>
+
+        <main class="w-full max-w-4xl flex-grow mx-auto">
+            <section id="intro" class="text-center p-6 md:p-8 rounded-2xl">
+                <div class="glass-card fade-in"> <h2 class="text-2xl md:text-3xl font-bold mb-3">Não sabe qual plano escolher?</h2>
+                    <p class="text-lg text-gray-300 mb-6">Deixe nosso Consultor Virtual te ajudar! Responda 3 perguntas rápidas e nossa IA encontrará o plano de internet perfeito para você e sua família.</p>
+                    <button id="start-btn" class="btn-primary font-bold py-3 px-8 rounded-full text-lg">Começar Agora</button>
+                </div>
+            </section>
+
+            <section id="questionnaire" class="hidden">
+                <div id="question-container" class="p-6 md:p-8 rounded-2xl glass-card">
+                    </div>
+            </section>
+
+            <section id="recommendation" class="hidden text-center mt-10">
+                <div class="p-6 md:p-8 rounded-2xl glass-card">
+                    <h2 class="text-2xl md:text-3xl font-bold mb-2">Plano Ideal Encontrado!</h2>
+                    <p id="recommendation-text" class="text-lg text-gray-300 mb-6">Com base nas suas respostas, este é o plano que recomendamos para você:</p>
+                </div>
+            </section>
+
+            <section id="plans" class="hidden mt-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    </div>
+            </section>
+
+            <section id="cta" class="hidden text-center mt-10">
+                   <div class="p-6 md:p-8 rounded-2xl glass-card">
+                    <h2 class="text-2xl md:text-3xl font-bold mb-4">Pronto para a ultravelocidade?</h2>
+                    <a id="whatsapp-link" href="#" target="_blank" class="btn-primary inline-block font-bold py-4 px-10 rounded-full text-xl">
+                        Contrate Agora
+                    </a>
+                    <p class="text-sm text-gray-400 mt-4">✓ Site protegido</p>
+                </div>
+            </section>
+        </main>
+
+        <footer class="w-full max-w-4xl text-center mt-10 p-4 text-gray-500 text-sm mx-auto">
+            &copy; 2025 PRONET FIBRA. Todos os direitos reservados.
+        </footer>
+
+    </div>
+
+    <script>
+        // Código JavaScript para o efeito de fundo de fibra óptica
+        const canvas = document.getElementById('fiberCanvas');
+        const ctx = canvas.getContext('2d');
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+
+        const lines = [];
+        const numLines = 80; // Quantidade de linhas
+        const maxSpeed = 2; // Velocidade das linhas
+        // Usando um gradiente para as linhas para um efeito de luz mais suave
+        const colors = [
+            'rgba(100, 255, 218, 0.6)', // Ciano da logo
+            'rgba(59, 130, 246, 0.5)'   // Azul da logo
+        ];
+
+        class Line {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * maxSpeed;
+                this.vy = (Math.random() - 0.5) * maxSpeed;
+                this.length = Math.random() * 50 + 20; // Comprimento da linha
+                this.alpha = Math.random() * 0.5 + 0.3; // Transparência
+                this.color = colors[Math.floor(Math.random() * colors.length)]; // Cor aleatória entre as definidas
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Se a linha sair da tela, reposiciona
+                if (this.x < -this.length || this.x > width + this.length || this.y < -this.length || this.y > height + this.length) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x + this.vx * this.length, this.y + this.vy * this.length);
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 1; // Largura da linha
+                ctx.globalAlpha = this.alpha;
+                ctx.stroke();
+                ctx.globalAlpha = 1; // Reseta a opacidade global
+            }
+        }
+
+        // Cria as linhas iniciais
+        for (let i = 0; i < numLines; i++) {
+            lines.push(new Line());
+        }
+
+        // Função de animação principal
+        function animate() {
+            requestAnimationFrame(animate); // Solicita o próximo frame
+            // Limpa o canvas com um fundo semi-transparente para criar um rastro
+            ctx.fillStyle = 'rgba(11, 19, 43, 0.05)'; /* Cor de fundo escura com transparência */
+            ctx.fillRect(0, 0, width, height);
+
+            lines.forEach(line => {
+                line.update();
+                line.draw();
+            });
+        }
+
+        animate(); // Inicia a animação
+
+        // Redimensiona o canvas quando a janela é redimensionada
+        window.addEventListener('resize', () => {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            // Reseta as linhas para que se ajustem ao novo tamanho da tela
+            lines.forEach(line => line.reset());
+        });
+
+        // Seu script de interação com o consultor virtual (mantido inalterado)
+        const appState = {
+            currentQuestionIndex: 0,
+            answers: {},
+            questions: [
+                {
+                    key: 'devices',
+                    text: 'Quantas pessoas e dispositivos (celulares, TVs, computadores) usam a internet na sua casa ao mesmo tempo?',
+                    options: [
+                        { text: 'Até 2 pessoas / 4 dispositivos', value: 1 },
+                        { text: 'De 3 a 4 pessoas / 8 dispositivos', value: 2 },
+                        { text: 'Mais de 5 pessoas / Muitos dispositivos', value: 3 },
+                    ],
+                },
+                {
+                    key: 'usage',
+                    text: 'Qual é o principal uso da sua internet?',
+                    options: [
+                        { text: 'Redes sociais e e-mails', value: 1 },
+                        { text: 'Filmes e séries em 4K, trabalho de casa', value: 2 },
+                        { text: 'Jogos online, streaming e uploads pesados', value: 3 },
+                    ],
+                },
+                {
+                    key: 'priority',
+                    text: 'O que é mais importante para você?',
+                    options: [
+                        { text: 'O melhor custo-benefício', value: 1 },
+                        { text: 'Velocidade para toda a família sem travar', value: 2 },
+                        { text: 'A máxima performance e velocidade disponível', value: 3 },
+                    ],
+                }
+            ],
+            plans: [
+                { id: 1, name: '300 MB', price: '79,99', description: 'Perfeito para navegar, estudar e assistir vídeos em alta definição.' },
+                { id: 2, name: '400 MB', price: '99,99', description: 'Ideal para famílias conectadas, home office e streaming em 4K.' },
+                { id: 3, name: '500 MB', price: '149,99', description: 'A ultravelocidade para gamers, streamers e quem precisa da máxima performance.' },
+            ]
+        };
+
+        const startBtn = document.getElementById('start-btn');
+        const introSection = document.getElementById('intro');
+        const questionnaireSection = document.getElementById('questionnaire');
+        const questionContainer = document.getElementById('question-container');
+        const recommendationSection = document.getElementById('recommendation');
+        const plansSection = document.getElementById('plans');
+        const ctaSection = document.getElementById('cta');
+        const whatsappLink = document.getElementById('whatsapp-link');
+
+        if (startBtn) {
+            startBtn.addEventListener('click', () => {
+                introSection.classList.add('hidden');
+                questionnaireSection.classList.remove('hidden');
+                questionnaireSection.classList.add('slide-in-up');
+                displayQuestion();
+            });
+        }
+
+        function displayQuestion() {
+            if (appState.currentQuestionIndex >= appState.questions.length) {
+                showRecommendation();
+                return;
+            }
+
+            const question = appState.questions[appState.currentQuestionIndex];
+            if (questionContainer) {
+                // A classe glass-card já tem mx-auto no CSS agora
+                questionContainer.innerHTML = `
+                    <div class="fade-in">
+                        <h3 class="text-xl md:text-2xl font-bold mb-6 text-center">${question.text}</h3>
+                        <div class="space-y-4">
+                            ${question.options.map((option, index) => `
+                                <button class="w-full text-left p-4 rounded-lg text-lg glass-card glass-card-hover" data-value="${option.value}">
+                                    ${option.text}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+
+                questionContainer.querySelectorAll('button').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        appState.answers[question.key] = parseInt(e.currentTarget.dataset.value);
+                        appState.currentQuestionIndex++;
+                        displayQuestion();
+                    });
+                });
+            }
+        }
+
+        function calculateRecommendation() {
+            const score = Object.values(appState.answers).reduce((sum, value) => sum + value, 0);
+            if (score <= 4) {
+                return 1; // 300 MB
+            } else if (score <= 7) {
+                return 2; // 400 MB
+            } else {
+                return 3; // 500 MB
+            }
+        }
+
+        function showRecommendation() {
+            const recommendedPlanId = calculateRecommendation();
+            const recommendedPlan = appState.plans.find(plan => plan.id === recommendedPlanId);
+
+            if (questionnaireSection) questionnaireSection.classList.add('hidden');
+            if (recommendationSection) {
+                recommendationSection.classList.remove('hidden');
+                recommendationSection.classList.add('slide-in-up');
+            }
+            if (plansSection) {
+                plansSection.classList.remove('hidden');
+                plansSection.classList.add('slide-in-up');
+            }
+            if (ctaSection) {
+                ctaSection.classList.remove('hidden');
+                ctaSection.classList.add('slide-in-up');
+            }
+
+            const plansContainer = plansSection ? plansSection.querySelector('div') : null;
+            if (plansContainer) {
+                plansContainer.innerHTML = appState.plans.map(plan => {
+                    const isRecommended = plan.id === recommendedPlanId;
+                    return `
+                        <div class="p-6 rounded-2xl glass-card ${isRecommended ? 'plan-card-recommended' : ''} flex flex-col">
+                            ${isRecommended ? '<span class="bg-white text-teal-700 font-bold text-sm px-3 py-1 rounded-full self-start mb-4">RECOMENDADO</span>' : ''}
+                            <h3 class="text-4xl font-black">${plan.name}</h3>
+                            <p class="text-2xl font-bold text-blue-btn mt-1 mb-4">R$ ${plan.price}<span class="text-lg font-normal text-gray-400">/mês</span></p>
+                            <p class="text-gray-300 flex-grow">${plan.description}</p>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            if (whatsappLink) {
+                const whatsappNumber = '5585989932950';
+                const message = `Olá! Vim através do Consultor Virtual e gostaria de saber mais sobre o plano ${recommendedPlan.name} da PRONET FIBRA, no valor de R$ ${recommendedPlan.price}.`;
+                const encodedMessage = encodeURIComponent(message);
+                whatsappLink.href = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+            }
+        }
+    </script>
+</body>
+</html>
